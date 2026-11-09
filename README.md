@@ -49,16 +49,15 @@ En qué año llegó el hombre a la luna?,1969,1970,1965,1972,0
 ## 🎮 Cómo usan los estudiantes
 
 1. Abren la URL de GitHub Pages.
-2. **Pantalla de bienvenida:** Se muestra "¡Bienvenido al Test!" con un botón **"Iniciar test"**.
-3. Haz clic en el botón **"Iniciar test"**.
-4. **Ingresan su nombre** en el campo que aparece ahora.
-5. **Presiona Enter** o haz clic fuera del input para continuar.
-6. El **timer de 10s** comenzará automáticamente.
-7. Responde cada pregunta de opción múltiple (botones A, B, C, D).
-8. **Si el tiempo se acaba** (llegue a 0), la pregunta se guarda como incorrecta y pasa a la siguiente automáticamente.
-9. Después de responder, el timer vuelve a 10s para la siguiente pregunta.
-10. Ven el **podio** con los 3 mejores después de cada pregunta.
-11. Al finalizar, clic en **"Exportar resultados CSV"** para descargar.
+2. **La pantalla muestra directamente** un campo para escribir el nombre con el mensaje "¡Bienvenido al Test!" y el cursor enfocado en el nombre.
+3. **Escriben su nombre** (o simplemente presionan Enter para usar "Jugador" por defecto).
+4. **Presionan la tecla Enter** para comenzar el test.
+5. El **timer de 10s** comenzará automáticamente.
+6. Responde cada pregunta de opción múltiple (botones A, B, C, D).
+7. **Si el tiempo se acaba** (llegue a 0), la pregunta se guarda como incorrecta y pasa a la siguiente automáticamente.
+8. Después de responder, el timer vuelve a 10s para la siguiente pregunta.
+9. Ven el **podio** con los 3 mejores después de cada pregunta.
+10. Al finalizar, clic en **"Exportar resultados CSV"** para descargar.
 
 ## 🛠️ Tecnologías
 
