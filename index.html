@@ -349,23 +349,62 @@
       // Mostrar vista de estudiante
       document.getElementById('student-view').style.display = 'block';
 
-      // Pregunta 0: Pedir nombre
-      askForName();
+      // Mostrar pantalla de inicio con botón
+      showStartScreen();
+    }
+
+    // Pantalla de inicio con botón
+    function showStartScreen() {
+      const questionText = document.getElementById('question-text');
+      const optionsEl = document.getElementById('options');
+
+      questionText.innerHTML = '¡Bienvenido al Test!';
+      optionsEl.innerHTML = '';
+
+      // Botón "Iniciar test"
+      const startBtn = document.createElement('button');
+      startBtn.className = 'btn';
+      startBtn.textContent = 'Iniciar test';
+      startBtn.style.width = '100%';
+      startBtn.style.marginTop = '1rem';
+      startBtn.style.fontSize = '1.2rem';
+      startBtn.onclick = startTest;
+
+      optionsEl.appendChild(startBtn);
+    }
+
+    function startTest() {
+      // Ocultar botón y mostrar input de nombre
+      const startBtn = document.querySelector('.btn');
+      if (startBtn) startBtn.style.display = 'none';
+
+      // Mostrar input de nombre
+      const nickInput = document.getElementById('student-nick');
+      nickInput.style.display = 'block';
+      nickInput.focus();
     }
 
     function askForName() {
-      document.getElementById('question-text').textContent = '¡Bienvenido al test!';
-
+      const questionText = document.getElementById('question-text');
       const optionsEl = document.getElementById('options');
-      optionsEl.innerHTML = '';
-
       const nickInput = document.getElementById('student-nick');
       const nick = nickInput.value.trim();
 
+      // Limpiar opciones previas (a menos que vengamos de la pantalla de inicio)
+      // Si hay un botón de "Iniciar test" aún visible, no limpiemos las opciones
+      const startBtn = document.querySelector('.btn');
+      if (!startBtn) {
+        optionsEl.innerHTML = '';
+      }
+
       if (!nick) {
+        // Mostrar mensaje solo si el input está vacío
         const msg = document.createElement('p');
         msg.textContent = 'Por favor, ingresa tu nombre arriba y presiona Enter';
-        optionsEl.appendChild(msg);
+        // Evitar duplicar el mensaje
+        if (!optionsEl.querySelector('p')) {
+          optionsEl.appendChild(msg);
+        }
         nickInput.style.display = 'block';
         return;
       }
@@ -374,6 +413,12 @@
       studentNick = nick;
       localStorage.setItem('student_nick', studentNick);
       nickInput.style.display = 'none';
+
+      // Ocultar mensaje de instrucción si existe
+      const existingMsg = optionsEl.querySelector('p');
+      if (existingMsg) {
+        existingMsg.remove();
+      }
 
       // Iniciar timer y mostrar primera pregunta
       startTimer();
