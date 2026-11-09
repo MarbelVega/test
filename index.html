@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test - Kahoot estilo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --bg-subtle: #111118;
+      --fg: #e0e0e0;
+      --muted: #666666;
+      --accent: #ff0;
+      --accent-dim: #ff6600;
+      --correct: #4caf50;
+      --wrong: #f44336;
+      --card: #1a1a24;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    /* Background animation */
+    #bg-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    h1, h2, h3 {
+      font-family: 'Orbitron', monospace;
+      letter-spacing: 2px;
+    }
+
+    h1 { font-size: 2.5rem; text-align: center; margin-bottom: 0.5rem; }
+    h2 { font-size: 1.8rem; border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+    h3 { font-size: 1.4rem; margin-top: 1.5rem; }
+
+    .btn {
+      display: inline-block;
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      padding: 0.8rem 1.5rem;
+      font-size: 1rem;
+      font-family: 'Orbitron', monospace;
+      letter-spacing: 1px;
+      cursor: pointer;
+      border-radius: 4px;
+      margin-top: 0.5rem;
+      transition: background 0.3s;
+    }
+    .btn:hover { background: var(--accent-dim); }
+    .btn:disabled { background: var(--muted); cursor: not-allowed; }
+
+    /* Teacher view */
+    #teacher-view { background: var(--card); padding: 2rem; border-radius: 8px; margin-bottom: 2rem; }
+    #teacher-view h2 { color: var(--accent); }
+
+    #passphrase-input { width: 100%; padding: 0.8rem; margin: 0.5rem 0; font-size: 1rem; }
+    #upload-btn { width: 100%; margin-top: 1rem; }
+
+    /* Student view */
+    #student-view { display: none; }
+    .question-container { background: var(--card); padding: 2rem; border-radius: 8px; margin-bottom: 1rem; }
+    .question-text { font-size: 1.2rem; margin-bottom: 1.5rem; }
+    .options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.8rem; }
+    .option-btn {
+      background: #111;
+      color: #fff;
+      border: 2px solid var(--muted);
+      padding: 1rem;
+      font-size: 1rem;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .option-btn:hover { border-color: var(--accent); background: #222; }
+    .option-btn.selected { border-color: var(--accent); background: var(--accent-dim); color: var(--bg); }
+    .option-btn.correct { border-color: var(--correct); background: rgba(76,175,80,0.2); }
+    .option-btn.wrong { border-color: var(--wrong); background: rgba(244,67,54,0.2); }
+
+    .podium { margin-top: 2rem; }
+    .podium h3 { color: var(--accent); }
+    .podium-list { list-style: none; padding: 0; margin: 1rem 0 0; }
+    .podium-list li { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--bg-subtle); }
+    .podium-list .name { font-weight: bold; }
+    .podium-list .score { color: var(--fg); }
+
+    .export-btn { margin-top: 1rem; display: none; }
+    .export-btn.show { display: block; }
+
+    /* Code display */
+    .session-code { font-family: 'Orbitron', monospace; font-size: 1.5rem; color: var(--accent); text-align: center; margin: 1rem 0; user-select: all; }
+  </style>
+</head>
+<body>
+  <canvas id="bg-canvas"></canvas>
+
+  <div class="container">
+    <!-- Teacher View -->
+    <div id="teacher-view">
+      <h1>Test - Cargar examen</h1>
+      <p>Sube un CSV con tus preguntas de opción múltiple y establece una contraseña para proteger la carga.</p>
+
+      <label for="passphrase" style="display:block; margin-bottom:0.5rem; font-size:0.9rem;">Contraseña:</label>
+      <input type="password" id="passphrase" class="passphrase-input" placeholder="Enter passphrase" />
+
+      <label for="csv-file" style="display:block; margin-top:1.5rem; font-size:0.9rem;">Archivo CSV:</label>
+      <input type="file" id="csv-file" accept=".csv" style="display:none;" />
+      <button class="btn" id="upload-btn">Cargar examen</button>
+
+      <div id="session-code" class="session-code"></div>
+      <p style="margin-top:1rem; font-size:0.9rem; color:var(--muted);">Comparte este código con tus estudiantes: <strong id="code-text"></strong></p>
+    </div>
+
+    <!-- Student View -->
+    <div id="student-view">
+      <h1>Test - Participa</h1>
+      <div style="margin-bottom:2rem;">
+        <label for="student-nick" style="display:block; font-size:0.9rem;">Tu nombre:</label>
+        <input type="text" id="student-nick" placeholder="Tu nombre" style="width:100%; padding:0.5rem; margin-top:0.5rem;">
+      </div>
+
+      <div id="question-container" class="question-container">
+        <div class="question-text" id="question-text"></div>
+        <div class="options" id="options"></div>
+      </div>
+
+      <div class="podium" id="podium">
+        <h3>Podio</h3>
+        <ul class="podium-list" id="podium-list">
+          <!-- dynamic -->
+        </ul>
+      </div>
+
+      <button class="btn export-btn" id="export-csv" style="display:none;">Exportar resultados CSV</button>
+    </div>
+  </div>
+
+  <script>
+    // ==================== Configuración ====================
+    const PASSPHRASE_DEFAULT = 'test2025'; // passphrase maestra (puede cambiar el docente)
+
+    // ==================== Estado global ====================
+    let testData = []; // arreglo de preguntas [{question, options:[], correctIndex}]
+    let currentQuestionIndex = 0;
+    let sessionCode = '';
+    let studentNick = '';
+    let studentAnswers = []; // {questionIndex, selectedIndex, correct, time}
+    let allStudentData = []; // {nick, answers:[]}
+
+    // ==================== Canvas background ====================
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    function drawStars() {
+      const stars = [];
+      const starCount = 80;
+      for (let i = 0; i < starCount; i++) {
+        stars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: Math.random() * 2 + 0.5,
+          speed: Math.random() * 0.5 + 0.2
+        });
+      }
+      let t = 0;
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        t += 0.016;
+        stars.forEach(s => {
+          s.y += s.speed;
+          if (s.y > canvas.height) {
+            s.y = 0;
+            s.x = Math.random() * canvas.width;
+          }
+          ctx.fillStyle = '#fff';
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        requestAnimationFrame(animate);
+      }
+      animate();
+
+      // Resize
+      window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      });
+    }
+
+    drawStars();
+
+    // ==================== Utilidades CSV ====================
+    function parseCSV(text) {
+      const lines = text.trim().split('\n');
+      const records = [];
+      for (let line of lines) {
+        // Ignorar líneas vacías o comentarios (opcional)
+        if (!line.trim() || line.startsWith('#')) continue;
+        // Dividir por coma, pero respetar comillas simples simples
+        const fields = line.split(',').map(f => f.trim());
+        if (fields.length >= 6) {
+          const correctIndex = parseInt(fields[5], 10);
+          // Normalizar a 0-based (aceptar 1-based también)
+          const normalizedIndex = (correctIndex >= 1 && correctIndex <= 4) ? correctIndex - 1 : correctIndex;
+          records.push({
+            question: fields[0],
+            options: [fields[1], fields[2], fields[3], fields[4]],
+            correctIndex: normalizedIndex
+          });
+        }
+      }
+      return records;
+    }
+
+    // ==================== Generar código de sesión ====================
+    function generateSessionCode() {
+      return Math.random().toString(36).substr(2, 6).toUpperCase();
+    }
+
+    // ==================== Función para limpiar datos previos ====================
+    function clearPreviousTest() {
+      try {
+        localStorage.removeItem('test_passphrase');
+        localStorage.removeItem('test_data');
+        localStorage.removeItem('test_session_code');
+        // Limpiar respuestas de sesiones anteriores
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('session_answers_')) {
+            localStorage.removeItem(key);
+          }
+        }
+      } catch (e) {
+        console.error('Error al limpiar localStorage', e);
+      }
+    }
+
+    // ==================== Vista Docente ====================
+    const teacherForm = document.getElementById('upload-btn');
+    const passphraseInput = document.getElementById('passphrase');
+    const sessionCodeEl = document.getElementById('session-code');
+    const codeTextEl = document.getElementById('code-text');
+
+    teacherForm.addEventListener('click', async () => {
+      const passphrase = passphraseInput.value.trim();
+      if (!passphrase) {
+        alert('Por favor ingresa una contraseña.');
+        return;
+      }
+
+      // Limpiar cualquier test previo para asegurar que solo uno esté activo a la vez
+      clearPreviousTest();
+
+      // Leer archivo CSV
+      const fileInput = document.getElementById('csv-file');
+      if (!fileInput.files || fileInput.files.length === 0) {
+        alert('Por favor selecciona un archivo CSV.');
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        const parsed = parseCSV(text);
+
+        if (parsed.length === 0) {
+          alert('El CSV no contiene preguntas válidas. Asegúrate de tener formato: pregunta,op1,op2,op3,op4,indiceCorrecto (0-based)');
+          return;
+        }
+
+        // Almacenar datos y generar código
+        testData = parsed;
+        sessionCode = generateSessionCode();
+        sessionCodeEl.textContent = sessionCode;
+        codeTextEl.textContent = sessionCode;
+        // Guardar en localStorage (protegido por passphrase simple)
+        try {
+          localStorage.setItem('test_passphrase', passphrase);
+          localStorage.setItem('test_data', JSON.stringify(testData));
+          localStorage.setItem('test_session_code', sessionCode);
+        } catch (e) {
+          console.error('Error guardando localStorage', e);
+        }
+
+        // Cambiar a vista de estudiante
+        showStudentView();
+      };
+      reader.readAsText(file);
+    });
+
+    // ==================== Vista Estudiante ====================
+    function showStudentView() {
+      document.getElementById('teacher-view').style.display = 'none';
+      document.getElementById('student-view').style.display = 'block';
+
+      // Cargar código si viene en localStorage (por si recarga)
+      if (!sessionCode && localStorage.getItem('test_session_code')) {
+        sessionCode = localStorage.getItem('test_session_code');
+        codeTextEl.textContent = sessionCode;
+      }
+
+      // Cargar datos de test
+      if (testData.length === 0 && localStorage.getItem('test_data')) {
+        testData = JSON.parse(localStorage.getItem('test_data'));
+      }
+
+      // Cargar nick y datos previos
+      const savedNick = localStorage.getItem('student_nick');
+      if (savedNick) {
+        document.getElementById('student-nick').value = savedNick;
+      }
+
+      startNewSession();
+    }
+
+    function startNewSession() {
+      currentQuestionIndex = 0;
+      studentNick = document.getElementById('student-nick').value.trim() || 'Anónimo';
+      localStorage.setItem('student_nick', studentNick);
+      studentAnswers = [];
+      allStudentData = [];
+
+      // Mostrar primera pregunta
+      showQuestion();
+    }
+
+    function showQuestion() {
+      const q = testData[currentQuestionIndex];
+      if (!q) {
+        endTest();
+        return;
+      }
+
+      document.getElementById('question-text').textContent = `Pregunta ${currentQuestionIndex + 1}/${testData.length}: ${q.question}`;
+
+      const optionsEl = document.getElementById('options');
+      optionsEl.innerHTML = '';
+
+      q.options.forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.textContent = `${String.fromCharCode(65 + i)}. ${opt}`; // A, B, C, D
+        btn.dataset.index = i;
+        btn.addEventListener('click', () => selectOption(btn));
+        optionsEl.appendChild(btn);
+      });
+
+      // Remover selección anterior highlights
+      document.querySelectorAll('.option-btn.selected').forEach(b => b.classList.remove('selected'));
+    }
+
+    function selectOption(btn) {
+      // Marcar selección (toggle visual)
+      document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+
+      const selectedIdx = parseInt(btn.dataset.index, 10);
+      const correctIdx = testData[currentQuestionIndex].correctIndex;
+      const isCorrect = selectedIdx === correctIdx;
+
+      // Feedback visual
+      btn.classList.add(isCorrect ? 'correct' : 'wrong');
+
+      // Guardar respuesta
+      studentAnswers.push({
+        questionIndex: currentQuestionIndex,
+        selectedIndex: selectedIdx,
+        correct: isCorrect,
+        time: new Date().getTime()
+      });
+
+      // Actualizar podio con los nuevos datos
+      updatePodium();
+
+      // Pasar a siguiente después de corto retraso
+      setTimeout(() => {
+        currentQuestionIndex++;
+        showQuestion();
+      }, 1500);
+    }
+
+    // ==================== Podio ====================
+    function updatePodium() {
+      // Calcular puntuaciones por nick (solo este estudiante, pero podio muestra a todos los que hayan respondido en esta sesión)
+      // Como es client-side, solo mostramos al estudiante actual y cualquier otro que haya entrado con el mismo código.
+      // Para simplicidad, calculamos ranking basados en las respuestas guardadas en localStorage bajo la sesión.
+      const key = `session_answers_${sessionCode}`;
+      let saved = JSON.parse(localStorage.getItem(key) || '[]');
+
+      // Agregar respuestas actuales
+      saved = saved || [];
+      studentAnswers.forEach(s => {
+        // Buscar si ya existe entry para este nick
+        const existing = saved.find(x => x.nick === studentNick);
+        if (existing) {
+          // Fusionar: actualizar score total
+          existing.score = (existing.score || 0) + (s.correct ? 1 : 0);
+        } else {
+          saved.push({ nick: studentNick, score: s.correct ? 1 : 0 });
+        }
+      });
+      localStorage.setItem(key, JSON.stringify(saved));
+
+      // Ordenar
+      saved.sort((a, b) => b.score - a.score);
+      const top3 = saved.slice(0, 3);
+
+      const listEl = document.getElementById('podium-list');
+      listEl.innerHTML = '';
+      top3.forEach((entry, i) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span class="name">${i + 1}. ${entry.nick}</span><span class="score">${entry.score}/${top3.length}</span>`;
+        listEl.appendChild(li);
+      });
+    }
+
+    // ==================== Final del test ====================
+    function endTest() {
+      // Actualizar podium final
+      updatePodium();
+
+      // Mostrar exportar CSV
+      document.getElementById('export-csv').classList.add('show');
+
+      // Pregunta final: mostrar ranking
+      const resultsEl = document.getElementById('question-container');
+      resultsEl.innerHTML = `
+        <h2>¡Test finalizado!</h2>
+        <p>Tu puntuación: ${studentAnswers.filter(a => a.correct).length} de ${studentAnswers.length} correctas.</p>
+        <div class="podium" style="margin-top:2rem;">
+          <h3>Podio final</h3>
+          <ul class="podium-list" id="final-podium-list">
+          </ul>
+        </div>
+      `;
+
+      // Calcular ranking final con todos los datos guardados
+      const key = `session_answers_${sessionCode}`;
+      const allData = JSON.parse(localStorage.getItem(key) || '[]');
+      allData.sort((a, b) => b.score - a.score);
+      const top3 = allData.slice(0, 3);
+      const listEl = document.getElementById('final-podium-list');
+      listEl.innerHTML = '';
+      top3.forEach((entry, i) => {
+        const li = document.createElement('li');
+        li.textContent = `${i + 1}. ${entry.nick} - ${entry.score} aciertos`;
+        listEl.appendChild(li);
+      });
+
+      // Exportar CSV
+      document.getElementById('export-csv').onclick = exportCSV;
+    }
+
+    function exportCSV() {
+      // Recopilar todos los datos de la sesión
+      const key = `session_answers_${sessionCode}`;
+      const allData = JSON.parse(localStorage.getItem(key) || '[]');
+
+      if (allData.length === 0) {
+        alert('No hay datos para exportar.');
+        return;
+      }
+
+      // CSV headers
+      let csv = 'Estudiante,Aciertos,Total Preguntas\n';
+      allData.forEach(row => {
+        csv += `${row.nick},${row.score},${testData.length}\n`;
+      });
+
+      // Descargar
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `resultados_test_${sessionCode}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // ==================== Eventos ====================
+    // Cargar passphrase desde localStorage si existe (para profesor)
+    window.addEventListener('load', () => {
+      const savedPass = localStorage.getItem('test_passphrase');
+      if (savedPass) {
+        passphraseInput.value = savedPass;
+        // Auto-cargar modo profesor si ya hay datos
+        if (localStorage.getItem('test_data')) {
+          testData = JSON.parse(localStorage.getItem('test_data'));
+          sessionCode = localStorage.getItem('test_session_code');
+          sessionCodeEl.textContent = sessionCode;
+          codeTextEl.textContent = sessionCode;
+          showStudentView();
+        }
+      }
+    });
+
+    // Exportar CSV button
+    const exportBtn = document.getElementById('export-csv');
+
+    // Inicializar canvas resize
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+  </script>
+</body>
+</html>
