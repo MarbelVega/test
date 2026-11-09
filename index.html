@@ -31,7 +31,6 @@
       overflow-x: hidden;
     }
 
-    /* Background animation */
     #bg-canvas {
       position: fixed;
       top: 0;
@@ -73,15 +72,13 @@
     .btn:hover { background: var(--accent-dim); }
     .btn:disabled { background: var(--muted); cursor: not-allowed; }
 
-    /* Teacher view */
-    #teacher-view { background: var(--card); padding: 2rem; border-radius: 8px; margin-bottom: 2rem; }
-    #teacher-view h2 { color: var(--accent); }
-
-    #passphrase-input { width: 100%; padding: 0.8rem; margin: 0.5rem 0; font-size: 1rem; }
-    #upload-btn { width: 100%; margin-top: 1rem; }
-
     /* Student view */
-    #student-view { display: none; }
+    #student-view { background: var(--card); padding: 2rem; border-radius: 8px; margin-bottom: 2rem; }
+    #student-view h1 { color: var(--fg); text-align: center; }
+
+    #passphrase-input { width: 100%; padding: 0.8rem; margin: 0.5rem 0; font-size: 1rem; display: none; }
+    #upload-btn { width: 100%; margin-top: 1rem; display: none; }
+
     .question-container { background: var(--card); padding: 2rem; border-radius: 8px; margin-bottom: 1rem; }
     .question-text { font-size: 1.2rem; margin-bottom: 1.5rem; }
     .options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.8rem; }
@@ -118,22 +115,6 @@
   <canvas id="bg-canvas"></canvas>
 
   <div class="container">
-    <!-- Teacher View -->
-    <div id="teacher-view">
-      <h1>Test - Cargar examen</h1>
-      <p>Sube un CSV con tus preguntas de opción múltiple y establece una contraseña para proteger la carga.</p>
-
-      <label for="passphrase" style="display:block; margin-bottom:0.5rem; font-size:0.9rem;">Contraseña:</label>
-      <input type="password" id="passphrase" class="passphrase-input" placeholder="Enter passphrase" />
-
-      <label for="csv-file" style="display:block; margin-top:1.5rem; font-size:0.9rem;">Archivo CSV:</label>
-      <input type="file" id="csv-file" accept=".csv" style="display:none;" />
-      <button class="btn" id="upload-btn">Cargar examen</button>
-
-      <div id="session-code" class="session-code"></div>
-      <p style="margin-top:1rem; font-size:0.9rem; color:var(--muted);">Comparte este código con tus estudiantes: <strong id="code-text"></strong></p>
-    </div>
-
     <!-- Student View -->
     <div id="student-view">
       <h1>Test - Participa</h1>
@@ -160,7 +141,7 @@
 
   <script>
     // ==================== Configuración ====================
-    const PASSPHRASE_DEFAULT = 'test2025'; // passphrase maestra (puede cambiar el docente)
+    // El test se carga automáticamente desde test.csv al iniciar
 
     // ==================== Estado global ====================
     let testData = []; // arreglo de preguntas [{question, options:[], correctIndex}]
@@ -168,7 +149,6 @@
     let sessionCode = '';
     let studentNick = '';
     let studentAnswers = []; // {questionIndex, selectedIndex, correct, time}
-    let allStudentData = []; // {nick, answers:[]}
 
     // ==================== Canvas background ====================
     const canvas = document.getElementById('bg-canvas');
@@ -238,105 +218,50 @@
       return records;
     }
 
+    // ==================== Cargar test.csv automáticamente ====================
+    function loadTestCSV() {
+      return new Promise((resolve, reject) => {
+        fetch('test.csv')
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('No se pudo cargar test.csv');
+            }
+            return response.text();
+          })
+          .then(text => {
+            const parsed = parseCSV(text);
+            if (parsed.length === 0) {
+              alert('El archivo test.csv no contiene preguntas válidas o está vacío.');
+              reject('No hay preguntas en test.csv');
+              return;
+            }
+            resolve(parsed);
+          })
+          .catch(error => {
+            console.error('Error cargando test.csv:', error);
+            alert('No se pudo cargar el archivo de preguntas. Asegúrate de que test.csv existe en el repositorio.');
+            reject(error);
+          });
+      });
+    }
+
     // ==================== Generar código de sesión ====================
     function generateSessionCode() {
       return Math.random().toString(36).substr(2, 6).toUpperCase();
     }
 
-    // ==================== Función para limpiar datos previos ====================
-    function clearPreviousTest() {
-      try {
-        localStorage.removeItem('test_passphrase');
-        localStorage.removeItem('test_data');
-        localStorage.removeItem('test_session_code');
-        // Limpiar respuestas de sesiones anteriores
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith('session_answers_')) {
-            localStorage.removeItem(key);
-          }
-        }
-      } catch (e) {
-        console.error('Error al limpiar localStorage', e);
-      }
-    }
-
-    // ==================== Vista Docente ====================
-    const teacherForm = document.getElementById('upload-btn');
-    const passphraseInput = document.getElementById('passphrase');
-    const sessionCodeEl = document.getElementById('session-code');
-    const codeTextEl = document.getElementById('code-text');
-
-    teacherForm.addEventListener('click', async () => {
-      const passphrase = passphraseInput.value.trim();
-      if (!passphrase) {
-        alert('Por favor ingresa una contraseña.');
-        return;
-      }
-
-      // Limpiar cualquier test previo para asegurar que solo uno esté activo a la vez
-      clearPreviousTest();
-
-      // Leer archivo CSV
-      const fileInput = document.getElementById('csv-file');
-      if (!fileInput.files || fileInput.files.length === 0) {
-        alert('Por favor selecciona un archivo CSV.');
-        return;
-      }
-
-      const file = fileInput.files[0];
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const text = e.target.result;
-        const parsed = parseCSV(text);
-
-        if (parsed.length === 0) {
-          alert('El CSV no contiene preguntas válidas. Asegúrate de tener formato: pregunta,op1,op2,op3,op4,indiceCorrecto (0-based)');
-          return;
-        }
-
-        // Almacenar datos y generar código
-        testData = parsed;
-        sessionCode = generateSessionCode();
-        sessionCodeEl.textContent = sessionCode;
-        codeTextEl.textContent = sessionCode;
-        // Guardar en localStorage (protegido por passphrase simple)
-        try {
-          localStorage.setItem('test_passphrase', passphrase);
-          localStorage.setItem('test_data', JSON.stringify(testData));
-          localStorage.setItem('test_session_code', sessionCode);
-        } catch (e) {
-          console.error('Error guardando localStorage', e);
-        }
-
-        // Cambiar a vista de estudiante
-        showStudentView();
-      };
-      reader.readAsText(file);
-    });
-
     // ==================== Vista Estudiante ====================
-    function showStudentView() {
-      document.getElementById('teacher-view').style.display = 'none';
+    async function initApp() {
+      // Cargar test.csv automáticamente
+      testData = await loadTestCSV();
+
+      // Generar código de sesión
+      sessionCode = generateSessionCode();
+
+      // Mostrar vista de estudiante
       document.getElementById('student-view').style.display = 'block';
 
-      // Cargar código si viene en localStorage (por si recarga)
-      if (!sessionCode && localStorage.getItem('test_session_code')) {
-        sessionCode = localStorage.getItem('test_session_code');
-        codeTextEl.textContent = sessionCode;
-      }
-
-      // Cargar datos de test
-      if (testData.length === 0 && localStorage.getItem('test_data')) {
-        testData = JSON.parse(localStorage.getItem('test_data'));
-      }
-
-      // Cargar nick y datos previos
-      const savedNick = localStorage.getItem('student_nick');
-      if (savedNick) {
-        document.getElementById('student-nick').value = savedNick;
-      }
-
+      // Mostrar primera pregunta
       startNewSession();
     }
 
@@ -345,7 +270,6 @@
       studentNick = document.getElementById('student-nick').value.trim() || 'Anónimo';
       localStorage.setItem('student_nick', studentNick);
       studentAnswers = [];
-      allStudentData = [];
 
       // Mostrar primera pregunta
       showQuestion();
@@ -505,24 +429,17 @@
     }
 
     // ==================== Eventos ====================
-    // Cargar passphrase desde localStorage si existe (para profesor)
+    // Inicializar aplicación al cargar la página
     window.addEventListener('load', () => {
-      const savedPass = localStorage.getItem('test_passphrase');
-      if (savedPass) {
-        passphraseInput.value = savedPass;
-        // Auto-cargar modo profesor si ya hay datos
-        if (localStorage.getItem('test_data')) {
-          testData = JSON.parse(localStorage.getItem('test_data'));
-          sessionCode = localStorage.getItem('test_session_code');
-          sessionCodeEl.textContent = sessionCode;
-          codeTextEl.textContent = sessionCode;
-          showStudentView();
-        }
-      }
+      initApp();
     });
 
-    // Exportar CSV button
-    const exportBtn = document.getElementById('export-csv');
+    // Manejo del nombre del estudiante
+    document.getElementById('student-nick').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        startNewSession();
+      }
+    });
 
     // Inicializar canvas resize
     window.addEventListener('resize', () => {
