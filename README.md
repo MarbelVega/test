@@ -1,70 +1,77 @@
 # Test - Kahoot Estilo OpenSource
 
-**Test** es una aplicación web de tipo "quiz" estilo Kahoot, diseñada para funcionar en GitHub Pages. Permite a docentes cargar exámenes de opción múltiple, y los estudiantes participan mediante un código único.
+**Test** es una aplicación web de tipo "quiz" estilo Kahoot, diseñada para funcionar en GitHub Pages. Los estudiantes pueden participar directamente sin necesidad de un docente cargar el examen.
 
-## Características
+## 📌 Características principales
 
-- **Modo Docente:** Carga un archivo CSV con preguntas y respuestas correctas, protegido por una passphrase (contraseña). Solo quien conoce la contraseña puede cargar el examen.
-- **Modo Estudiante:** Los estudiantes ingresan con el código único generado al cargar el examen. Responden preguntas de opción múltiple.
-- **Podio y Ranking:** Después de cada pregunta se muestra el podio con los tres mejores puntajes. Al final del test, se muestra el ranking final.
-- **Exportar CSV:** Al finalizar, el docente puede exportar los resultados a un archivo CSV con los aciertos de cada estudiante.
-- **Una sola carga a la vez:** Cada vez que el docente carga un nuevo examen, se borran los datos anteriores, asegurando que solo un test esté activo por sesión.
+- **Acceso directo:** El test se carga automáticamente desde `test.csv` al abrir la página. No requiere configuración del docente.
+- **Pregunta 0 - Nombre:** Al iniciar, los estudiantes ingresan su nombre que se mantendrá durante todo el test.
+- **Temporizador de 30s:** Entre cada pregunta hay un conteo regresivo de 30 segundos que avanza automáticamente.
+- **Podio y Ranking:** Después de cada pregunta se muestra el podium con los 3 mejores puntajes. Al final del test, ranking completo.
+- **Exportar CSV:** Al finalizar, se puede descargar un archivo con los resultados de todos los participantes.
+- **Una sola sesión activa:** Los datos se reinician al recargar la página, asegurando un test limpio cada vez.
 
-## Formato del CSV
+## 📄 Formato del CSV
 
-El archivo CSV debe tener el siguiente formato (una línea por pregunta):
+El archivo `test.csv` debe tener este formato (una pregunta por línea):
 
 ```
 pregunta,opción1,opción2,opción3,opción4,indice_correcto
 ```
 
-- `indice_correcto`: **0-based** (0 para la primera opción, 1 para la segunda, etc.). También se acepta **1-based** (1-4), la aplicación lo normaliza automáticamente.
-- Ejemplo:
+- `indice_correcto`: **0-based** (0 para la primera opción, 1 para la segunda, etc.). También se acepta **1-based** (1-4), la app lo normaliza automáticamente.
+- Ejemplo (archivo `test.csv` incluido):
 
 ```
 ¿Cuál es la capital de Francia?,París,Londres,Berlín,Madrid,0
 ¿Cuánto es 2+2?,3,4,5,6,1
+¿Qué planeta es conocido como el "Planeta Rojo"?,Marte,Vénus,Júpiter,Saturno,0
+¿Quién escribió "Don Quijote de la Mancha"?,Miguel de Cervantes,William Shakespeare,Literato Gómez,Nikolái Gogol,0
+¿Cuál es el elemento químico con símbolo "O"?,Oxígeno,Osmio,Oro,Plata,0
 ```
 
-## Despliegue en GitHub Pages
+## 🚀 Despliegue en GitHub Pages
 
-1. **Crear un repositorio** en GitHub llamado `test` (o el nombre que prefieras).
-2. **Subir los archivos** del proyecto: `index.html`, `README.md` (opcional) y cualquier otro recurso.
-3. **Configurar GitHub Pages:**
-   - Ve a la configuración del repositorio (Settings).
-   - En la sección "Code and automation", selecciona "Pages".
-   - Como fuente, elige la rama `main` y el folder `/root` (o `/(root)`).
-   - Guarda. Tu sitio estará disponible en `https://<tu-usuario>.github.io/test/` (o el nombre del repositorio).
-4. **Opcional:** Para usar un dominio personalizado, configura los registros DNS y habilita el dominio en la sección de Pages.
+1. **Crea un repositorio** en GitHub (puedes llamar `test`).
+2. **Sube estos archivos**: `index.html`, `README.md` y el archivo `test.csv` (obligatorio).
+3. **Configura GitHub Pages:**
+   - Ve a *Settings* → *Pages*.
+   - Fuente: rama `main`, carpeta `/root` (o `/(root)`).
+   - Guarda. Tu sitio estará en `https://<usuario>.github.io/test/`.
+4. Al entrar a la URL, el test se cargará automáticamente.
 
-## Uso
+## 🎮 Cómo usan los estudiantes
 
-### Docente
+1. Abren la URL de GitHub Pages.
+2. **Ingresan su nombre** en el campo que aparece al inicio (Pregunta 0).
+3. El **timer de 30s** comienza automáticamente.
+4. Responden cada pregunta de opción múltiple (botones A, B, C, D).
+5. Después de responder, el timer vuelve a 30s para la siguiente pregunta.
+6. Ven el **podio** con los 3 mejores después de cada pregunta.
+7. Al finalizar, clic en **"Exportar resultados CSV"** para descargar.
 
-1. Accede a la URL de tu GitHub Pages.
-2. Ingresa una **contraseña** en el campo "Contraseña". Esta será la passphrase para proteger la carga.
-3. Sube un archivo CSV con el formato descrito arriba.
-4. Al cargarse, se generará un **código de sesión** (ej. `A3F9B2`). Comparte este código con tus estudiantes.
-5. Durante el test, después de cada pregunta aparecerá el **podio** con los tres mejores puntajes.
-6. Al finalizar, haz clic en **"Exportar resultados CSV"** para descargar un archivo con los resultados de todos los participantes.
+## 🛠️ Tecnologías
 
-### Estudiante
-
-1. Abre la misma URL y espera a que el docente cargue el test.
-2. Ingresa tu **nombre** (apodo).
-3. Ingresa el **código de sesión** que te dio el docente (o si ya está en la URL, solo presiona "Unirse").
-4. Responde cada pregunta de opción múltiple seleccionando la opción correcta.
-5. Al final, observa tu posición en el **podio final**.
-
-## Tecnologías utilizadas
-
-- HTML5, CSS3, JavaScript puros (sin dependencias externas).
-- localStorage para persistencia de datos en el cliente.
+- HTML5, CSS3, JavaScript puro (sin dependencias externas).
+- `localStorage` para persistencia en el cliente (los datos se reinician al recargar).
 - Canvas para animación de fondo estrellado.
-- Sin servidor backend: todo funciona en el navegador del cliente.
+- Diseño responsive, funciona en móviles y desktop.
 
-## Limitaciones
+## ⚠️ Limitaciones
 
-- Al ser una aplicación cliente-side (solo HTML/JS), los datos se guardan en el navegador del usuario. Si los estudiantes limpian sus datos de navegador o usan otro dispositivo, perderán su progreso.
-- La seguridad de la passphrase se basa en que no se revela la contraseña a los estudiantes. Para un uso más seguro en producción, se recomienda integrar un backend real (Firebase, Node.js, etc.).
-- El CSV es de parsing sencillo; preguntas con comas en el texto deben evitarse o estar entre comillas (el parser actual divide solo por comas).
+- Al recargar la página o abrir en otro dispositivo, los datos se reinician (diseño cliente-side).
+- El CSV usa parsing simple por coma; si las preguntas tienen comas, escríbelas entre comillas o evítalas.
+- La primera versión no incluye persistencia entre sesiones diferentes.
+
+---
+
+**Estructura del repositorio:**
+
+```
+/test/
+├── index.html      # Aplicación completa (HTML + CSS + JS)
+├── README.md       # Instrucciones y descripción
+└── test.csv        # CSV de preguntas (cargado automáticamente)
+```
+
+¡Listo! Los estudiantes pueden participar inmediatamente sin necesidad de configuración previa.

@@ -97,6 +97,22 @@
     .option-btn.correct { border-color: var(--correct); background: rgba(76,175,80,0.2); }
     .option-btn.wrong { border-color: var(--wrong); background: rgba(244,67,54,0.2); }
 
+    /* Timer display */
+    .timer-display {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--accent);
+      color: var(--bg);
+      padding: 0.8rem 1.5rem;
+      font-family: 'Orbitron', monospace;
+      font-size: 1.2rem;
+      min-width: 120px;
+      text-align: center;
+      border-radius: 4px;
+      z-index: 100;
+    }
+
     .podium { margin-top: 2rem; }
     .podium h3 { color: var(--accent); }
     .podium-list { list-style: none; padding: 0; margin: 1rem 0 0; }
@@ -113,6 +129,9 @@
 </head>
 <body>
   <canvas id="bg-canvas"></canvas>
+
+  <!-- Timer display -->
+  <div class="timer-display" id="timer-display">Tiempo: 30s</div>
 
   <div class="container">
     <!-- Student View -->
@@ -141,7 +160,7 @@
 
   <script>
     // ==================== Configuración ====================
-    // El test se carga automáticamente desde test.csv al iniciar
+    const TIME_LIMIT = 30; // segundos por pregunta
 
     // ==================== Estado global ====================
     let testData = []; // arreglo de preguntas [{question, options:[], correctIndex}]
@@ -149,6 +168,8 @@
     let sessionCode = '';
     let studentNick = '';
     let studentAnswers = []; // {questionIndex, selectedIndex, correct, time}
+    let timerInterval = null;
+    let remainingTime = TIME_LIMIT;
 
     // ==================== Canvas background ====================
     const canvas = document.getElementById('bg-canvas');
@@ -250,7 +271,43 @@
       return Math.random().toString(36).substr(2, 6).toUpperCase();
     }
 
-    // ==================== Vista Estudiante ====================
+    // ==================== Timer functionality ====================
+    function startTimer() {
+      // Detener timer anterior si existe
+      stopTimer();
+
+      remainingTime = TIME_LIMIT;
+      updateTimerDisplay();
+
+      timerInterval = setInterval(() => {
+        remainingTime--;
+        updateTimerDisplay();
+
+        if (remainingTime <= 0) {
+          clearInterval(timerInterval);
+          timerElement.style.display = 'none';
+          // Avanzar a la siguiente pregunta automáticamente
+          currentQuestionIndex++;
+          showQuestion();
+        }
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      timerDisplay.textContent = `Tiempo: ${remainingTime}s`;
+    }
+
+    function stopTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      timerDisplay.style.display = 'none';
+    }
+
+    const timerDisplay = document.getElementById('timer-display');
+
+    // ==================== Cargar y empezar el test ====================
     async function initApp() {
       // Cargar test.csv automáticamente
       testData = await loadTestCSV();
@@ -261,15 +318,76 @@
       // Mostrar vista de estudiante
       document.getElementById('student-view').style.display = 'block';
 
-      // Mostrar primera pregunta
-      startNewSession();
+      // Pregunta 0: Pedir nombre (se mantiene durante todo el test)
+      askForName();
     }
 
+    function askForName() {
+      // Mostrar mensaje de bienvenida
+      document.getElementById('question-text').textContent = '¡Bienvenido al test!';
+
+      const optionsEl = document.getElementById('options');
+      optionsEl.innerHTML = '';
+
+      // Obtener nombre ingresado
+      const nickInput = document.getElementById('student-nick');
+      const nick = nickInput.value.trim();
+
+      // Si el nombre está vacío, pedir que lo ingresen
+      if (!nick) {
+        // Mostrar mensaje y mantener input visible
+        const msg = document.createElement('p');
+        msg.textContent = 'Por favor, ingresa tu nombre arriba y presiona Enter';
+        optionsEl.appendChild(msg);
+        // Asegurar que el input sea visible
+        nickInput.style.display = 'block';
+        return;
+      }
+
+      // Guardar nombre y ocultar el input de nombre
+      studentNick = nick;
+      localStorage.setItem('student_nick', studentNick);
+      nickInput.style.display = 'none';
+
+      // Continuar con el temporizador y primera pregunta
+      startTimer();
+      // Mostrar primera pregunta (no llamar startTimer de nuevo aquí, ya se inició)
+      showQuestionWithoutTimer();
+    }
+
+    function showQuestionWithoutTimer() {
+      const q = testData[currentQuestionIndex];
+      if (!q) {
+        endTest();
+        return;
+      }
+
+      document.getElementById('question-text').textContent = `Pregunta ${currentQuestionIndex + 1}/${testData.length}: ${q.question}`;
+
+      const optionsEl = document.getElementById('options');
+      optionsEl.innerHTML = '';
+
+      q.options.forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.textContent = `${String.fromCharCode(65 + i)}. ${opt}`; // A, B, C, D
+        btn.dataset.index = i;
+        btn.addEventListener('click', () => selectOption(btn));
+        optionsEl.appendChild(btn);
+      });
+
+      // Remover selección anterior highlights
+      document.querySelectorAll('.option-btn.selected').forEach(b => b.classList.remove('selected'));
+      // Timer ya está corriendo, no reiniciar
+    }
+
+    // ==================== Vista Estudiante ====================
     function startNewSession() {
       currentQuestionIndex = 0;
       studentNick = document.getElementById('student-nick').value.trim() || 'Anónimo';
       localStorage.setItem('student_nick', studentNick);
       studentAnswers = [];
+      stopTimer();
 
       // Mostrar primera pregunta
       showQuestion();
@@ -298,6 +416,9 @@
 
       // Remover selección anterior highlights
       document.querySelectorAll('.option-btn.selected').forEach(b => b.classList.remove('selected'));
+
+      // Reiniciar timer para esta pregunta
+      startTimer();
     }
 
     function selectOption(btn) {
@@ -320,10 +441,11 @@
         time: new Date().getTime()
       });
 
-      // Actualizar podio con los nuevos datos
+      // Actualizar podio
       updatePodium();
 
-      // Pasar a siguiente después de corto retraso
+      // Detener timer y avanzar después de 1.5 segundos
+      stopTimer();
       setTimeout(() => {
         currentQuestionIndex++;
         showQuestion();
@@ -332,19 +454,13 @@
 
     // ==================== Podio ====================
     function updatePodium() {
-      // Calcular puntuaciones por nick (solo este estudiante, pero podio muestra a todos los que hayan respondido en esta sesión)
-      // Como es client-side, solo mostramos al estudiante actual y cualquier otro que haya entrado con el mismo código.
-      // Para simplicidad, calculamos ranking basados en las respuestas guardadas en localStorage bajo la sesión.
       const key = `session_answers_${sessionCode}`;
       let saved = JSON.parse(localStorage.getItem(key) || '[]');
 
-      // Agregar respuestas actuales
       saved = saved || [];
       studentAnswers.forEach(s => {
-        // Buscar si ya existe entry para este nick
         const existing = saved.find(x => x.nick === studentNick);
         if (existing) {
-          // Fusionar: actualizar score total
           existing.score = (existing.score || 0) + (s.correct ? 1 : 0);
         } else {
           saved.push({ nick: studentNick, score: s.correct ? 1 : 0 });
@@ -352,7 +468,6 @@
       });
       localStorage.setItem(key, JSON.stringify(saved));
 
-      // Ordenar
       saved.sort((a, b) => b.score - a.score);
       const top3 = saved.slice(0, 3);
 
@@ -367,13 +482,10 @@
 
     // ==================== Final del test ====================
     function endTest() {
-      // Actualizar podium final
       updatePodium();
 
-      // Mostrar exportar CSV
       document.getElementById('export-csv').classList.add('show');
 
-      // Pregunta final: mostrar ranking
       const resultsEl = document.getElementById('question-container');
       resultsEl.innerHTML = `
         <h2>¡Test finalizado!</h2>
@@ -385,7 +497,6 @@
         </div>
       `;
 
-      // Calcular ranking final con todos los datos guardados
       const key = `session_answers_${sessionCode}`;
       const allData = JSON.parse(localStorage.getItem(key) || '[]');
       allData.sort((a, b) => b.score - a.score);
@@ -398,12 +509,10 @@
         listEl.appendChild(li);
       });
 
-      // Exportar CSV
       document.getElementById('export-csv').onclick = exportCSV;
     }
 
     function exportCSV() {
-      // Recopilar todos los datos de la sesión
       const key = `session_answers_${sessionCode}`;
       const allData = JSON.parse(localStorage.getItem(key) || '[]');
 
@@ -412,13 +521,11 @@
         return;
       }
 
-      // CSV headers
       let csv = 'Estudiante,Aciertos,Total Preguntas\n';
       allData.forEach(row => {
         csv += `${row.nick},${row.score},${testData.length}\n`;
       });
 
-      // Descargar
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -429,15 +536,14 @@
     }
 
     // ==================== Eventos ====================
-    // Inicializar aplicación al cargar la página
     window.addEventListener('load', () => {
       initApp();
     });
 
-    // Manejo del nombre del estudiante
+    // Manejo del nombre del estudiante y tecla Enter
     document.getElementById('student-nick').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
-        startNewSession();
+        askForName();
       }
     });
 
