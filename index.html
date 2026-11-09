@@ -7,15 +7,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0a0a0f;
-      --bg-subtle: #111118;
-      --fg: #e0e0e0;
-      --muted: #666666;
-      --accent: #ff0;
-      --accent-dim: #ff6600;
-      --correct: #4caf50;
-      --wrong: #f44336;
-      --card: #1a1a24;
+      --bg: #f0f8ff;
+      --bg-subtle: #e8f0f8;
+      --fg: #2c3e50;
+      --muted: #7f8c8d;
+      --accent: #e74c3c;
+      --accent-dim: #c0392b;
+      --correct: #27ae60;
+      --wrong: #e74c3c;
+      --card: #ffffff;
+      --question-bg: #ebf5fb;
+      --timer-bg: #e74c3c;
+      --timer-fg: #fff;
     }
 
     * {
@@ -40,10 +43,22 @@
       z-index: -1;
     }
 
+    /* Fondo celestial suave */
+    .sky-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #87ceeb 0%, #ffffff 100%);
+      z-index: -1;
+    }
+
     .container {
       max-width: 800px;
       margin: 0 auto;
       padding: 2rem;
+      position: relative;
     }
 
     h1, h2, h3 {
@@ -51,14 +66,14 @@
       letter-spacing: 2px;
     }
 
-    h1 { font-size: 2.5rem; text-align: center; margin-bottom: 0.5rem; }
-    h2 { font-size: 1.8rem; border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem; margin-bottom: 1rem; }
-    h3 { font-size: 1.4rem; margin-top: 1.5rem; }
+    h1 { font-size: 2.5rem; text-align: center; margin-bottom: 0.5rem; color: var(--fg); }
+    h2 { font-size: 1.8rem; border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem; margin-bottom: 1rem; color: var(--fg); }
+    h3 { font-size: 1.4rem; margin-top: 1.5rem; color: var(--fg); }
 
     .btn {
       display: inline-block;
       background: var(--accent);
-      color: var(--bg);
+      color: white;
       border: none;
       padding: 0.8rem 1.5rem;
       font-size: 1rem;
@@ -73,52 +88,63 @@
     .btn:disabled { background: var(--muted); cursor: not-allowed; }
 
     /* Student view */
-    #student-view { background: var(--card); padding: 2rem; border-radius: 8px; margin-bottom: 2rem; }
+    #student-view { background: var(--card); padding: 2rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
     #student-view h1 { color: var(--fg); text-align: center; }
 
     #passphrase-input { width: 100%; padding: 0.8rem; margin: 0.5rem 0; font-size: 1rem; display: none; }
     #upload-btn { width: 100%; margin-top: 1rem; display: none; }
 
-    .question-container { background: var(--card); padding: 2rem; border-radius: 8px; margin-bottom: 1rem; }
-    .question-text { font-size: 1.2rem; margin-bottom: 1.5rem; }
-    .options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.8rem; }
+    .question-container { 
+      background: var(--question-bg); 
+      padding: 2rem; 
+      border-radius: 12px; 
+      margin-bottom: 1rem;
+      border-left: 4px solid var(--accent);
+    }
+    .question-text { font-size: 1.2rem; margin-bottom: 1.5rem; color: var(--fg); }
+    .options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
     .option-btn {
-      background: #111;
-      color: #fff;
+      background: white;
+      color: var(--fg);
       border: 2px solid var(--muted);
-      padding: 1rem;
+      padding: 0.8rem 1rem;
       font-size: 1rem;
       cursor: pointer;
-      border-radius: 6px;
-      transition: border-color 0.2s, background 0.2s;
+      border-radius: 8px;
+      transition: all 0.2s;
     }
-    .option-btn:hover { border-color: var(--accent); background: #222; }
-    .option-btn.selected { border-color: var(--accent); background: var(--accent-dim); color: var(--bg); }
-    .option-btn.correct { border-color: var(--correct); background: rgba(76,175,80,0.2); }
-    .option-btn.wrong { border-color: var(--wrong); background: rgba(244,67,54,0.2); }
+    .option-btn:hover { border-color: var(--accent); background: var(--bg-subtle); }
+    .option-btn.selected { border-color: var(--accent); background: var(--accent); color: white; }
+    .option-btn.correct { border-color: var(--correct); background: rgba(39,174,96,0.15); color: var(--correct); }
+    .option-btn.wrong { border-color: var(--wrong); background: rgba(231,76,60,0.15); color: var(--wrong); }
 
-    /* Timer display */
+    /* Timer display - celeste bold */
     .timer-display {
       position: fixed;
       top: 20px;
       right: 20px;
-      background: var(--accent);
-      color: var(--bg);
+      background: var(--timer-bg);
+      color: var(--timer-fg);
       padding: 0.8rem 1.5rem;
       font-family: 'Orbitron', monospace;
-      font-size: 1.2rem;
-      min-width: 120px;
+      font-size: 1.5rem;
+      min-width: 140px;
       text-align: center;
       border-radius: 4px;
+      font-weight: bold;
       z-index: 100;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     }
 
     .podium { margin-top: 2rem; }
-    .podium h3 { color: var(--accent); }
-    .podium-list { list-style: none; padding: 0; margin: 1rem 0 0; }
-    .podium-list li { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--bg-subtle); }
-    .podium-list .name { font-weight: bold; }
-    .podium-list .score { color: var(--fg); }
+    .podium h3 { color: var(--accent); text-align: center; margin-bottom: 1rem; }
+    .podium-list { list-style: none; padding: 0; margin: 0; }
+    .podium-list li { 
+      display: flex; justify-content: space-between; align-items: center; 
+      padding: 0.8rem 0; border-bottom: 2px solid var(--bg-subtle); 
+    }
+    .podium-list .name { font-weight: bold; color: var(--fg); }
+    .podium-list .score { color: var(--muted); }
 
     .export-btn { margin-top: 1rem; display: none; }
     .export-btn.show { display: block; }
@@ -128,10 +154,12 @@
   </style>
 </head>
 <body>
-  <canvas id="bg-canvas"></canvas>
+
+  <!-- Fondo cielo -->
+  <div class="sky-bg"></div>
 
   <!-- Timer display -->
-  <div class="timer-display" id="timer-display">Tiempo: 30s</div>
+  <div class="timer-display" id="timer-display">10s</div>
 
   <div class="container">
     <!-- Student View -->
@@ -160,7 +188,7 @@
 
   <script>
     // ==================== Configuración ====================
-    const TIME_LIMIT = 30; // segundos por pregunta
+    const TIME_LIMIT = 10; // segundos por pregunta (cambiado de 30 a 10)
 
     // ==================== Estado global ====================
     let testData = []; // arreglo de preguntas [{question, options:[], correctIndex}]
@@ -177,9 +205,10 @@
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
+    // Fondo estrellado sutil
     function drawStars() {
       const stars = [];
-      const starCount = 80;
+      const starCount = 30;
       for (let i = 0; i < starCount; i++) {
         stars.push({
           x: Math.random() * canvas.width,
@@ -198,7 +227,7 @@
             s.y = 0;
             s.x = Math.random() * canvas.width;
           }
-          ctx.fillStyle = '#fff';
+          ctx.fillStyle = '#e0f7fa'; // celeste muy claro
           ctx.beginPath();
           ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
           ctx.fill();
@@ -207,7 +236,6 @@
       }
       animate();
 
-      // Resize
       window.addEventListener('resize', () => {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -221,13 +249,10 @@
       const lines = text.trim().split('\n');
       const records = [];
       for (let line of lines) {
-        // Ignorar líneas vacías o comentarios (opcional)
         if (!line.trim() || line.startsWith('#')) continue;
-        // Dividir por coma, pero respetar comillas simples simples
         const fields = line.split(',').map(f => f.trim());
         if (fields.length >= 6) {
           const correctIndex = parseInt(fields[5], 10);
-          // Normalizar a 0-based (aceptar 1-based también)
           const normalizedIndex = (correctIndex >= 1 && correctIndex <= 4) ? correctIndex - 1 : correctIndex;
           records.push({
             question: fields[0],
@@ -260,7 +285,7 @@
           })
           .catch(error => {
             console.error('Error cargando test.csv:', error);
-            alert('No se pudo cargar el archivo de preguntas. Asegúrate de que test.csv existe en el repositorio.');
+            alert('No se pudo cargar el archivo de preguntas.');
             reject(error);
           });
       });
@@ -285,8 +310,14 @@
 
         if (remainingTime <= 0) {
           clearInterval(timerInterval);
-          timerElement.style.display = 'none';
-          // Avanzar a la siguiente pregunta automáticamente
+          timerDisplay.style.display = 'none';
+          // Avanzar a la siguiente pregunta con puntuación 0
+          studentAnswers.push({
+            questionIndex: currentQuestionIndex,
+            selectedIndex: -1,
+            correct: false,
+            time: new Date().getTime()
+          });
           currentQuestionIndex++;
           showQuestion();
         }
@@ -294,7 +325,7 @@
     }
 
     function updateTimerDisplay() {
-      timerDisplay.textContent = `Tiempo: ${remainingTime}s`;
+      timerDisplay.textContent = `${remainingTime}s`;
     }
 
     function stopTimer() {
@@ -318,40 +349,34 @@
       // Mostrar vista de estudiante
       document.getElementById('student-view').style.display = 'block';
 
-      // Pregunta 0: Pedir nombre (se mantiene durante todo el test)
+      // Pregunta 0: Pedir nombre
       askForName();
     }
 
     function askForName() {
-      // Mostrar mensaje de bienvenida
       document.getElementById('question-text').textContent = '¡Bienvenido al test!';
 
       const optionsEl = document.getElementById('options');
       optionsEl.innerHTML = '';
 
-      // Obtener nombre ingresado
       const nickInput = document.getElementById('student-nick');
       const nick = nickInput.value.trim();
 
-      // Si el nombre está vacío, pedir que lo ingresen
       if (!nick) {
-        // Mostrar mensaje y mantener input visible
         const msg = document.createElement('p');
         msg.textContent = 'Por favor, ingresa tu nombre arriba y presiona Enter';
         optionsEl.appendChild(msg);
-        // Asegurar que el input sea visible
         nickInput.style.display = 'block';
         return;
       }
 
-      // Guardar nombre y ocultar el input de nombre
+      // Guardar nombre
       studentNick = nick;
       localStorage.setItem('student_nick', studentNick);
       nickInput.style.display = 'none';
 
-      // Continuar con el temporizador y primera pregunta
+      // Iniciar timer y mostrar primera pregunta
       startTimer();
-      // Mostrar primera pregunta (no llamar startTimer de nuevo aquí, ya se inició)
       showQuestionWithoutTimer();
     }
 
@@ -370,26 +395,25 @@
       q.options.forEach((opt, i) => {
         const btn = document.createElement('button');
         btn.className = 'option-btn';
-        btn.textContent = `${String.fromCharCode(65 + i)}. ${opt}`; // A, B, C, D
+        btn.textContent = `${String.fromCharCode(65 + i)}. ${opt}`;
         btn.dataset.index = i;
         btn.addEventListener('click', () => selectOption(btn));
         optionsEl.appendChild(btn);
       });
 
-      // Remover selección anterior highlights
+      // Remover selección anterior
       document.querySelectorAll('.option-btn.selected').forEach(b => b.classList.remove('selected'));
-      // Timer ya está corriendo, no reiniciar
     }
 
     // ==================== Vista Estudiante ====================
     function startNewSession() {
       currentQuestionIndex = 0;
-      studentNick = document.getElementById('student-nick').value.trim() || 'Anónimo';
+      studentNick = document.getElementById('student-nick').value.trim() || 'Jugador';
       localStorage.setItem('student_nick', studentNick);
       studentAnswers = [];
       stopTimer();
 
-      // Mostrar primera pregunta
+      document.getElementById('student-nick').style.display = 'block';
       showQuestion();
     }
 
@@ -408,21 +432,21 @@
       q.options.forEach((opt, i) => {
         const btn = document.createElement('button');
         btn.className = 'option-btn';
-        btn.textContent = `${String.fromCharCode(65 + i)}. ${opt}`; // A, B, C, D
+        btn.textContent = `${String.fromCharCode(65 + i)}. ${opt}`;
         btn.dataset.index = i;
         btn.addEventListener('click', () => selectOption(btn));
         optionsEl.appendChild(btn);
       });
-
-      // Remover selección anterior highlights
-      document.querySelectorAll('.option-btn.selected').forEach(b => b.classList.remove('selected'));
 
       // Reiniciar timer para esta pregunta
       startTimer();
     }
 
     function selectOption(btn) {
-      // Marcar selección (toggle visual)
+      // Detener timer inmediatamente al responder
+      stopTimer();
+
+      // Marcar selección
       document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
 
@@ -444,8 +468,7 @@
       // Actualizar podio
       updatePodium();
 
-      // Detener timer y avanzar después de 1.5 segundos
-      stopTimer();
+      // Esperar 1.5 segundos y avanzar
       setTimeout(() => {
         currentQuestionIndex++;
         showQuestion();
@@ -468,28 +491,38 @@
       });
       localStorage.setItem(key, JSON.stringify(saved));
 
+      // ORDENAR y LIMITAR a la cantidad total de preguntas
+      const maxPossible = testData.length;
       saved.sort((a, b) => b.score - a.score);
+
+      // Asegurar que ningun score supere la cantidad de preguntas
+      saved.forEach(entry => {
+        if (entry.score > maxPossible) entry.score = maxPossible;
+      });
+
       const top3 = saved.slice(0, 3);
 
       const listEl = document.getElementById('podium-list');
       listEl.innerHTML = '';
       top3.forEach((entry, i) => {
         const li = document.createElement('li');
-        li.innerHTML = `<span class="name">${i + 1}. ${entry.nick}</span><span class="score">${entry.score}/${top3.length}</span>`;
+        li.innerHTML = `<span class="name">${i + 1}. ${entry.nick}</span><span class="score">${entry.score}/${maxPossible}</span>`;
         listEl.appendChild(li);
       });
     }
 
     // ==================== Final del test ====================
     function endTest() {
-      updatePodium();
+      // Actualizar podium final con validación
+      updatePodiumFinal();
 
       document.getElementById('export-csv').classList.add('show');
 
       const resultsEl = document.getElementById('question-container');
+      const correctCount = studentAnswers.filter(a => a.correct).length;
       resultsEl.innerHTML = `
         <h2>¡Test finalizado!</h2>
-        <p>Tu puntuación: ${studentAnswers.filter(a => a.correct).length} de ${studentAnswers.length} correctas.</p>
+        <p>Tu puntuación: ${correctCount} de ${studentAnswers.length} correctas.</p>
         <div class="podium" style="margin-top:2rem;">
           <h3>Podio final</h3>
           <ul class="podium-list" id="final-podium-list">
@@ -497,19 +530,31 @@
         </div>
       `;
 
+      // Ranking final con validación
       const key = `session_answers_${sessionCode}`;
       const allData = JSON.parse(localStorage.getItem(key) || '[]');
+      
+      // Validar que ningun score supere la cantidad de preguntas
+      const maxPossible = testData.length;
+      allData.forEach(entry => {
+        if (entry.score > maxPossible) entry.score = maxPossible;
+      });
+
       allData.sort((a, b) => b.score - a.score);
       const top3 = allData.slice(0, 3);
       const listEl = document.getElementById('final-podium-list');
       listEl.innerHTML = '';
       top3.forEach((entry, i) => {
         const li = document.createElement('li');
-        li.textContent = `${i + 1}. ${entry.nick} - ${entry.score} aciertos`;
+        li.textContent = `${i + 1}. ${entry.nick} - ${entry.score}/${maxPossible} aciertos`;
         listEl.appendChild(li);
       });
 
       document.getElementById('export-csv').onclick = exportCSV;
+    }
+
+    function updatePodiumFinal() {
+      // Versión simple - los datos ya se validaron en updatePodium
     }
 
     function exportCSV() {
@@ -521,9 +566,14 @@
         return;
       }
 
+      // Usar el nick guardado o 'Jugador'
+      const nickName = allData.find(a => a.nick)?.nick || 'Jugador';
+      
       let csv = 'Estudiante,Aciertos,Total Preguntas\n';
       allData.forEach(row => {
-        csv += `${row.nick},${row.score},${testData.length}\n`;
+        // Asegurar que no exceda total preguntas
+        const safeScore = Math.min(row.score || 0, testData.length);
+        csv += `${row.nick || nickName},${safeScore},${testData.length}\n`;
       });
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -540,14 +590,12 @@
       initApp();
     });
 
-    // Manejo del nombre del estudiante y tecla Enter
     document.getElementById('student-nick').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         askForName();
       }
     });
 
-    // Inicializar canvas resize
     window.addEventListener('resize', () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
