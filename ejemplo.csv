@@ -1,0 +1,5 @@
+pregunta,A,B,C,D,correcta,segundos
+"¿Qué puerto usa HTTPS por defecto?",80,443,8080,22,B,15
+"¿Qué significa SQL?",Structured Query Language,Simple Question Logic,System Query List,Sequential Query Language,A,20
+"¿Cuál es la capital administrativa de Bolivia?",Sucre,La Paz,Cochabamba,Oruro,B,20
+"¿Qué algoritmo es de cifrado simétrico?",RSA,ECDSA,AES,Diffie-Hellman,C,20
